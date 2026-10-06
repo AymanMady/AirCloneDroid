@@ -720,3 +720,84 @@ function loadPhotos(viewModel, callback){
             callback();
     });
 }
+
+// ===================================================================
+// OUTILS : synthèse vocale, caméra, micro, fond d'écran
+// ===================================================================
+function initToolsView() {
+    function setStatus($el, ok, msg) {
+        $el.removeClass('ok err').addClass(ok ? 'ok' : 'err').text(msg);
+    }
+
+    // --- Synthèse vocale
+    $('#tts-speak').click(function () {
+        var txt = $('#tts-text').val();
+        var $s = $('#tts-status');
+        setStatus($s, true, 'Envoi…');
+        $.ajax({
+            url: 'datas/tts/speak.xhtml', method: 'POST', dataType: 'json',
+            data: { text: txt }
+        }).done(function (r) {
+            setStatus($s, r.success, r.success ? 'Lecture en cours sur le téléphone.' : ('Erreur : ' + r.error));
+        }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    });
+
+    // --- Caméra
+    function takePhoto(front) {
+        var $s = $('#cam-status');
+        setStatus($s, true, 'Capture…');
+        $('#cam-media').empty();
+        $.ajax({ url: 'datas/camera/take.xhtml', dataType: 'json', data: { front: front ? '1' : '0' } })
+            .done(function (r) {
+                if (r.success) {
+                    setStatus($s, true, 'Photo capturée.');
+                    $('#cam-media').html('<img src="' + r.file + '?t=' + Date.now() + '"/>');
+                } else { setStatus($s, false, 'Erreur : ' + r.error); }
+            }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    }
+    $('#cam-back').click(function () { takePhoto(false); });
+    $('#cam-front').click(function () { takePhoto(true); });
+
+    // --- Microphone
+    $('#mic-start').click(function () {
+        var $s = $('#mic-status');
+        $('#mic-media').empty();
+        $.ajax({ url: 'datas/mic/start.xhtml', dataType: 'json' }).done(function (r) {
+            setStatus($s, r.success, r.success ? 'Enregistrement en cours…' : ('Erreur : ' + r.error));
+        }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    });
+    $('#mic-stop').click(function () {
+        var $s = $('#mic-status');
+        $.ajax({ url: 'datas/mic/stop.xhtml', dataType: 'json' }).done(function (r) {
+            if (r.success) {
+                setStatus($s, true, 'Enregistrement terminé.');
+                $('#mic-media').html('<audio controls src="' + r.file + '?t=' + Date.now() + '"></audio>'
+                    + '<p class="hint"><a href="' + r.file + '" download>Télécharger</a></p>');
+            } else { setStatus($s, false, 'Erreur : ' + r.error); }
+        }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    });
+
+    // --- Fond d'écran
+    $('#wp-set').click(function () {
+        var $s = $('#wp-status');
+        setStatus($s, true, 'Application…');
+        $.ajax({ url: 'datas/wallpaper/set.xhtml', method: 'POST', dataType: 'json',
+            data: { path: $('#wp-path').val() } })
+            .done(function (r) {
+                setStatus($s, r.success, r.success ? 'Fond d\'écran appliqué.' : ('Erreur : ' + r.error));
+            }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    });
+
+    // --- E-mail
+    $('#mail-send').click(function () {
+        var $s = $('#mail-status');
+        setStatus($s, true, 'Envoi en cours…');
+        $.ajax({ url: 'datas/email/send.xhtml', method: 'POST', dataType: 'json', data: {
+            host: $('#mail-host').val(), port: $('#mail-port').val(),
+            user: $('#mail-user').val(), pass: $('#mail-pass').val(),
+            to: $('#mail-to').val(), subject: $('#mail-subject').val(), body: $('#mail-body').val()
+        } }).done(function (r) {
+            setStatus($s, r.success, r.success ? 'E-mail envoyé.' : ('Erreur : ' + r.error));
+        }).fail(function () { setStatus($s, false, 'Échec de la requête.'); });
+    });
+}

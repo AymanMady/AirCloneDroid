@@ -1,0 +1,15 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "html/auth_guard.bsh");</bsh>
+<bsh>
+import de.fun2code.android.buildownpawserver.feature.EmailHelper;
+one(k) { v = parameters.get(k); if(v instanceof java.util.List) v = v.get(0); return (v==null)?"":v; }
+host = one("host");
+portStr = one("port");
+port = 465;
+try { if(portStr.length()>0) port = Integer.parseInt(portStr); } catch(Exception e){}
+user = one("user");
+pass = one("pass");
+to = one("to");
+subject = one("subject");
+body = one("body");
+print(EmailHelper.send(host, port, user, pass, to, subject, body));
+</bsh>

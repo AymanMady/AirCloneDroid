@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="../../public/css/window-content.css"/>
+</head>
+<body>
+<div id="toolsView">
+    <style>
+        #toolsView { padding: 18px; font-family: "Segoe UI", Roboto, Arial, sans-serif; color: #223; overflow: auto; height: 100%; box-sizing: border-box; }
+        #toolsView .tool-card { border: 1px solid #dfe3e8; border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; background: #fafbfc; }
+        #toolsView .tool-card h3 { margin: 0 0 10px; font-size: 16px; color: #0580C3; }
+        #toolsView textarea, #toolsView input[type=text] { width: 100%; box-sizing: border-box; padding: 9px; border: 1px solid #cbd2d9; border-radius: 7px; font-size: 14px; }
+        #toolsView textarea { min-height: 64px; resize: vertical; }
+        #toolsView button { margin-top: 10px; margin-right: 8px; padding: 9px 16px; border: none; border-radius: 7px; background: #0580C3; color: #fff; font-size: 14px; cursor: pointer; }
+        #toolsView button:hover { background: #0469a0; }
+        #toolsView button.secondary { background: #6b7680; }
+        #toolsView .status { margin-top: 10px; font-size: 13px; min-height: 16px; }
+        #toolsView .status.ok { color: #1a7f37; }
+        #toolsView .status.err { color: #c0392b; }
+        #toolsView .media { margin-top: 12px; }
+        #toolsView .media img { max-width: 100%; border-radius: 8px; border: 1px solid #dfe3e8; }
+        #toolsView .hint { font-size: 12px; color: #78828c; margin: 4px 0 0; }
+    </style>
+
+    <div class="tool-card" id="tc-tts">
+        <h3>🔊 Synthèse vocale</h3>
+        <textarea id="tts-text" placeholder="Texte à faire lire par le téléphone…"></textarea>
+        <button id="tts-speak">Lire sur le téléphone</button>
+        <div class="status" id="tts-status"></div>
+    </div>
+
+    <div class="tool-card" id="tc-cam">
+        <h3>📷 Caméra</h3>
+        <button id="cam-back">Photo (arrière)</button>
+        <button id="cam-front" class="secondary">Photo (avant)</button>
+        <div class="status" id="cam-status"></div>
+        <div class="media" id="cam-media"></div>
+    </div>
+
+    <div class="tool-card" id="tc-mic">
+        <h3>🎙️ Microphone</h3>
+        <button id="mic-start">Démarrer l'enregistrement</button>
+        <button id="mic-stop" class="secondary">Arrêter</button>
+        <div class="status" id="mic-status"></div>
+        <div class="media" id="mic-media"></div>
+    </div>
+
+    <div class="tool-card" id="tc-wp">
+        <h3>🖼️ Fond d'écran</h3>
+        <input type="text" id="wp-path" placeholder="/sdcard/Pictures/photo.jpg"/>
+        <p class="hint">Chemin d'une image présente sur le téléphone (voir l'app Fichiers).</p>
+        <button id="wp-set">Appliquer comme fond d'écran</button>
+        <div class="status" id="wp-status"></div>
+    </div>
+
+    <div class="tool-card" id="tc-mail">
+        <h3>✉️ Envoi d'e-mail</h3>
+        <input type="text" id="mail-host" placeholder="Serveur SMTP (ex. smtp.gmail.com)"/>
+        <input type="text" id="mail-port" placeholder="Port SSL (465)" style="margin-top:8px;"/>
+        <input type="text" id="mail-user" placeholder="Votre adresse (identifiant SMTP)" style="margin-top:8px;"/>
+        <input type="text" id="mail-pass" placeholder="Mot de passe / mot de passe d'application" style="margin-top:8px;"/>
+        <input type="text" id="mail-to" placeholder="Destinataire" style="margin-top:8px;"/>
+        <input type="text" id="mail-subject" placeholder="Objet" style="margin-top:8px;"/>
+        <textarea id="mail-body" placeholder="Message…" style="margin-top:8px;"></textarea>
+        <p class="hint">SMTP sécurisé (SSL, port 465). Pour Gmail, utilisez un « mot de passe d'application ».</p>
+        <button id="mail-send">Envoyer</button>
+        <div class="status" id="mail-status"></div>
+    </div>
+</div>
+</body>
+</html>

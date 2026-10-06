@@ -1,0 +1,70 @@
+/*
+ * Shared authentication guard, sourced at the very top of every dynamic
+ * (.xhtml) endpoint. It enforces a cookie-based session:
+ *
+ *   - If no password is configured, access is allowed (fail-open on a fresh
+ *     install only; the app always writes a PIN, so this is a safety net).
+ *   - A valid session is a cookie "mrd_auth" whose value matches the token
+ *     stored in conf/session (written by login.xhtml on a correct PIN).
+ *   - Unauthenticated XHR calls (jQuery sends X-Requested-With) get 401 so the
+ *     front-end can react; plain navigations are redirected to the login page.
+ *
+ * conf/ lives outside the served html/ root, so password and session files are
+ * never reachable over HTTP.
+ */
+{
+    service = server.props.get("serviceContext");
+
+    expected = "";
+    try {
+        pwFile = new java.io.File(service.pawHome + "conf/password");
+        if (pwFile.exists()) {
+            br = new java.io.BufferedReader(new java.io.FileReader(pwFile));
+            expected = br.readLine();
+            br.close();
+            if (expected == null) expected = "";
+        }
+    } catch (Exception e) {
+        expected = "";
+    }
+
+    if (expected.length() > 0) {
+        sessTok = "";
+        try {
+            sf = new java.io.File(service.pawHome + "conf/session");
+            if (sf.exists()) {
+                sbr = new java.io.BufferedReader(new java.io.FileReader(sf));
+                sessTok = sbr.readLine();
+                sbr.close();
+                if (sessTok == null) sessTok = "";
+            }
+        } catch (Exception e2) {
+            sessTok = "";
+        }
+
+        granted = false;
+        if (sessTok.length() > 0) {
+            cookie = request.getRequestHeader("Cookie");
+            if (cookie != null) {
+                for (part : cookie.split(";")) {
+                    p = part.trim();
+                    if (p.startsWith("mrd_auth=")) {
+                        val = p.substring("mrd_auth=".length());
+                        if (val.equals(sessTok)) granted = true;
+                    }
+                }
+            }
+        }
+
+        if (!granted) {
+            xrw = request.getRequestHeader("X-Requested-With");
+            if (xrw != null) {
+                request.addHeader("WWW-Authenticate", "FormBased");
+                request.sendError(401, "Authentification requise");
+            } else {
+                request.redirect("/login.xhtml", null);
+            }
+            clear();
+        }
+    }
+}

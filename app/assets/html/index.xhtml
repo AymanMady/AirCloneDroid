@@ -1,98 +1,90 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "html/auth_guard.bsh");</bsh>
+<!DOCTYPE html>
 <html>
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <head>
+        <title>MyRemoteDroid</title>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="public/css/jquery-ui-smoothness/jquery-ui-1.10.4.custom.min.css" />
+		<link rel="stylesheet" type="text/css" href="public/css/w2ui/w2ui-1.3.2.min.css" />
+		<link rel="stylesheet" type="text/css" href="public/css/style.css" />
+		<link rel="stylesheet" href="public/css/window-content.css" />
+		<script src="public/javascript/jquery-ui/jquery-1.10.2.js"></script>
 
-    <!-- <link type="text/css" href="css/ui-darkness/jquery-ui.css" rel="Stylesheet" /> -->
-    <!--<link type="text/css" href="css/overcast/jquery-ui.css" rel="Stylesheet" />-->
-    <!--<link rel="stylesheet" href="css/default.css">-->
+        <script src="public/javascript/jquery-ui/jquery-ui-1.10.4.custom.min.js"></script>
+		<!--<script type="text/javascript" src="public/javascript/w2ui/w2ui-1.3.2.min.js"></script>-->
+		<script type="text/javascript" src="public/javascript/knockout/knockout-3.1.0.js"></script>
+		<script type="text/javascript">
+			function capitaliseFirstLetter(string){
+				return string.charAt(0).toUpperCase() + string.slice(1);
+			}
+			var iconsFolder = 'public/img/desktop/airdroid/';
+			var softwares = {
+				sms : { id:'sms', label:'SMS', icon:'messages.png', view:'views/sms/sms.html'},
+				apps : { id:'apps', label:'Applications', icon:'app.png', view:'views/app/app.html'},
+				callLog : { id:'callLogs', label:'Journal d\'appel', icon:'phone.png', view:'views/callLog/callLog.html'},
+				contacts : { id:'contacts', label:'Contacts', icon:'contacts.png', view:'views/addressBook/contacts.html'},
+				files : { id:'files', label:'Fichiers', icon:'file.png', view:'views/files/files.html'},
+				tools : { id:'tools', label:'Outils', icon:'camera.png', view:'views/tools/tools.html'}
+			}
+            var openTabSofts = {
+                photos : { id:'photos', label:'Photos', icon:'photo.png', view:'views/slideshow/slide.xhtml'}
 
-    <title>It works!</title>
-</head>
-<body>
-
-<script type="text/javascript" src="public/javascript/jquery.js"></script>
-<script type="text/javascript" src="public/javascript/jquery-ui.js"></script>
-
-
-<script type="text/javascript">
-    var menuHidden = false;
-    $(document).ready(function () {
-//        resizeIframe();
-//        setPawVersion();
-//        $("#accordion").accordion();
-        updateStatusbar(); // this function is in view/statusbar.inc
-    });
-
-    //    $(window).bind('resize', function() {
-    //        resizeIframe();
-    //    });
-
-    //    function resizeIframe() {
-    //        $("#contentDiv").css("height", ($(window).height() * 0.9) + "px");
-    //    }
-
-    //    function ShowHideMenu(){
-    //        //$("#navbar").animate({"width": "toggle"}, { duration: 10 });
-    //        $("#navbar").animate({"width": "toggle"}, { duration: 0 });
-    //        menuHidden = menuHidden ? false : true;
-    //
-    //
-    //        if(menuHidden) {
-    //            $("#contentDiv").css("width", "95%");
-    //        }
-    //        else{
-    //            $("#contentDiv").css("width", "75%");
-    //        }
-    //
-    //        // Reload the iframe, if the filemanager is resized
-    //        if($('#content').contents().get(0).location.href.match("/filemanager") != null) {
-    //            $('#content').each(function() {
-    //                this.contentWindow.location.reload(true);
-    //            });
-    //        }
-    //
-    //    }
-
-</script>
-
-<h1>It works!</h1>
-This is the default web page for this server.<br/>
-The web server is running but no content has been added, yet.
-<hr/>
-
-<!--Include of status-bar-->
-<div style="position: absolute; left: 10%; top: -10px; z-index: 100; width: 80%;">
-    <bsh>cat(server.props.get("serviceContext").pawHome + "/html/views/sections/header_status_bar.xhtml");</bsh>
-</div>
-
-<div style="background-color: #6fbc74">
-<h3>System Information</h3>
-    <bsh>
-        import de.fun2code.android.pawserver.util.Utils;
-
-        service = server.props.get("serviceContext");
-        url = service.getPawServer().server.protocol + "://" + Utils.getLocalIpAddress() + ":" +
-        service.getPawServer().serverPort;
-    </bsh>
-
-    URL: <b><tt>
-    <bsh>$$.print(url)</bsh>
-</tt></b><br/>
-    PAW Version: <b><tt>
-    <bsh>$$.print(service.getPawServer().getServerProperty("version"))</bsh>
-</tt></b><br/>
-
-    <p>
-        <bsh>
-            String[] opts = { "MANUFACTURER", "BOARD", "BRAND", "DISPLAY", "MODEL", "PRODUCT",
-            "TIME", "TYPE", "USER", "VERSION.INCREMENTAL",
-            "VERSION.RELEASE", "VERSION.SDK"};
-
-            for(o : opts) {
-            print(o + ": <b><tt>" + eval("android.os.Build." + o) + "</tt></b><br/>");
             }
-        </bsh>
-    </p>
-</div>
-</body>
+			jQuery(function($jq) {
+				function genWindow(software){
+					var id = 'sw_'+software.id;
+					$jq('#desktop').append('<div id="'+id+'" class="window"><div class="header"><img class="icon" src="'+iconsFolder+software.icon+'"/><h4 class="title">'+software.label+'</h4><div class="command"><a class="min"></a><a class="max"></a><a class="close"></a></div></div><div class="content"></div></div>');
+					$jq('#'+id+' .content').load(software.view+' #'+software.id+'View', function() {
+						//console.log( "Load html was performed." );
+						//console.log( 'id : #'+id );
+						//console.log( 'init'+capitaliseFirstLetter(software.id)+'View' );
+						window['init'+capitaliseFirstLetter(software.id)+'View']();
+						/*$.getScript( 'public/javascript/app-window/'+software.id+'.js', function( data, textStatus, jqxhr ) {
+							console.log( data ); // Data returned
+							console.log( textStatus ); // Success
+							console.log( jqxhr.status ); // 200
+							console.log( "Load script was performed." );
+						});*/
+					});
+					$jq('#'+id).draggable({cancel: '#'+id+' .content'}).resizable({ handles: "all", alsoResize: '#'+id+' .content', minWidth: '845' , minHeight: '475' }).hide();
+					$jq('#'+id+' .close').click(function(){
+						$jq('#'+id).hide();
+					});
+					$jq('#'+id+' .max').click(function(){
+						//$jq('#'+id).height($( window ).height());
+						//$jq('#'+id).children().height($( window ).height());
+						//$jq('#'+id).css('transform', 'scale(2)');
+					});
+				}
+				function genIcon(software){
+					$jq('#shortcut-area').append('<div id="icon_'+software.id+'" class="desktop-shortcut"><img src="'+iconsFolder+software.icon+'" /><div>'+software.label+'</div></div>');
+				}
+                function genIconOpenTab(software){
+                    $jq('#shortcut-area').append('<div onclick="window.open(\'/'+software.view+'\')" id="icon_'+software.id+'" class="desktop-shortcut"><img src="'+iconsFolder+software.icon+'" /><div>'+software.label+'</div></div>');
+                }
+				for(var index in softwares){
+					genIcon(softwares[index]);
+					genWindow(softwares[index]);
+				}
+
+                for(var index in openTabSofts) {
+                    genIconOpenTab(openTabSofts[index]);
+                }
+
+				$jq("#shortcut-area").sortable();
+				$jq(".desktop-shortcut").click(function() {
+					$jq('#sw_'+$jq(this).attr('id').split('_')[1]).show();
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<div id="desktop">
+			<div id="shortcut-area">
+			</div>
+		</div>
+		<div id="taskbar">
+		</div>
+		<script type="text/javascript" src="public/javascript/app.js"></script>
+	</body>
 </html>

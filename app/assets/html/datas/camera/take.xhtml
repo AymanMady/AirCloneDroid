@@ -1,0 +1,9 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "html/auth_guard.bsh");</bsh>
+<bsh>
+import de.fun2code.android.buildownpawserver.feature.CameraHelper;
+ctx = server.props.get("serviceContext");
+front = parameters.get("front");
+if(front instanceof java.util.List) front = front.get(0);
+isFront = (front != null && front.equals("1"));
+print(CameraHelper.takePhoto(ctx, isFront));
+</bsh>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>MyRemoteDroid — Lanceur</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #0580C3 0%, #023e61 100%); color: #fff;
+        }
+        .card {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+            padding: 40px 36px; border-radius: 16px; width: 360px; max-width: 92vw; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+        h1 { margin: 0 0 6px; font-size: 24px; }
+        p  { margin: 0 0 22px; opacity: .85; font-size: 14px; }
+        .row { display: flex; gap: 8px; margin-bottom: 10px; }
+        input {
+            flex: 1; padding: 13px; font-size: 16px; border: none; border-radius: 10px;
+            background: #fff; color: #023e61; text-align: center;
+        }
+        input.port { flex: 0 0 90px; }
+        button {
+            width: 100%; margin-top: 12px; padding: 13px; font-size: 16px; border: none; border-radius: 10px;
+            background: #fff; color: #0580C3; font-weight: 600; cursor: pointer;
+        }
+        button:active { transform: scale(.98); }
+        .hint { margin-top: 18px; font-size: 12px; opacity: .75; line-height: 1.5; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>MyRemoteDroid</h1>
+    <p>Ouvrez l'interface de votre téléphone</p>
+    <div class="row">
+        <input id="ip" type="text" placeholder="Adresse IP (ex. 192.168.1.12)"/>
+        <input id="port" class="port" type="text" value="7575"/>
+    </div>
+    <button id="go">Se connecter</button>
+    <p class="hint">
+        Lancez le serveur dans l'application sur le téléphone : l'adresse IP et le
+        code de connexion s'affichent à l'écran. Le PC et le téléphone doivent être
+        sur le même réseau Wi-Fi.
+    </p>
+</div>
+<script>
+    (function () {
+        var ipEl = document.getElementById('ip');
+        var portEl = document.getElementById('port');
+        try {
+            if (localStorage.getItem('mrd_ip')) ipEl.value = localStorage.getItem('mrd_ip');
+            if (localStorage.getItem('mrd_port')) portEl.value = localStorage.getItem('mrd_port');
+        } catch (e) {}
+
+        function open() {
+            var ip = ipEl.value.trim();
+            var port = (portEl.value.trim() || '7575');
+            if (!ip) { ipEl.focus(); return; }
+            try { localStorage.setItem('mrd_ip', ip); localStorage.setItem('mrd_port', port); } catch (e) {}
+            window.location.href = 'http://' + ip + ':' + port + '/';
+        }
+        document.getElementById('go').addEventListener('click', open);
+        ipEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+        portEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') open(); });
+        ipEl.focus();
+    })();
+</script>
+</body>
+</html>

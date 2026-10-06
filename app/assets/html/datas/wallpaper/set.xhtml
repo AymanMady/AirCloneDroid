@@ -1,0 +1,8 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "html/auth_guard.bsh");</bsh>
+<bsh>
+import de.fun2code.android.buildownpawserver.feature.FeatureHelper;
+ctx = server.props.get("serviceContext");
+path = parameters.get("path");
+if(path instanceof java.util.List) path = path.get(0);
+print(FeatureHelper.setWallpaper(ctx, path));
+</bsh>
