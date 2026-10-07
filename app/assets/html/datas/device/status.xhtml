@@ -1,0 +1,6 @@
+<bsh>source(server.props.get("serviceContext").pawHome + "html/auth_guard.bsh");</bsh>
+<bsh>
+import de.fun2code.android.buildownpawserver.feature.StatusHelper;
+ctx = server.props.get("serviceContext");
+print(StatusHelper.status(ctx));
+</bsh>

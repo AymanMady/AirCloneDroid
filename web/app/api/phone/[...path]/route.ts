@@ -12,11 +12,11 @@ async function handle(
   const target = "/" + path.map(encodeURIComponent).join("/") + req.nextUrl.search;
 
   const headers: Record<string, string> = {};
-  let body: string | null = null;
+  let body: ArrayBuffer | null = null;
   if (req.method === "POST" || req.method === "PUT") {
     headers["Content-Type"] =
       req.headers.get("content-type") || "application/x-www-form-urlencoded";
-    body = await req.text();
+    body = await req.arrayBuffer();
   }
 
   try {
@@ -25,6 +25,8 @@ async function handle(
     const out = new Headers();
     const ct = res.headers.get("content-type");
     out.set("content-type", ct || "application/octet-stream");
+    const cd = res.headers.get("content-disposition");
+    if (cd) out.set("content-disposition", cd);
     out.set("cache-control", "no-store");
     return new Response(buf, { status: res.status, headers: out });
   } catch (e: unknown) {

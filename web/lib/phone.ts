@@ -55,24 +55,48 @@ async function login(): Promise<void> {
     redirect: "manual",
   });
   const cookies = res.headers.getSetCookie?.() ?? [];
-  sessionCookie = null;
+  let cookie: string | null = null;
   for (const sc of cookies) {
     const m = sc.match(/mrd_auth=([^;]+)/);
-    if (m) sessionCookie = `mrd_auth=${m[1]}`;
+    if (m) cookie = `mrd_auth=${m[1]}`;
   }
-  if (!sessionCookie) {
+  if (!cookie) {
     throw new Error("Connexion refusée (code PIN incorrect ?)");
   }
+  sessionCookie = cookie;
+}
+
+/**
+ * Coalesced login. The phone stores a single session token server-side and
+ * each login rotates it, so concurrent logins would invalidate one another
+ * (only the last token stays valid, the rest get 401). Sharing one in-flight
+ * login promise means a burst of parallel requests — e.g. the dashboard
+ * aggregator — authenticates once and all reuse the same valid cookie.
+ */
+let loginPromise: Promise<void> | null = null;
+function ensureLogin(force = false): Promise<void> {
+  if (force) sessionCookie = null;
+  if (sessionCookie) return Promise.resolve();
+  if (!loginPromise) {
+    loginPromise = login().finally(() => {
+      loginPromise = null;
+    });
+  }
+  return loginPromise;
 }
 
 /** Authenticated request to a phone path like "/datas/sms/threads.xhtml". */
 export async function phoneFetch(
   pathPart: string,
-  init: { method?: string; body?: string | null; headers?: Record<string, string> } = {}
+  init: {
+    method?: string;
+    body?: string | ArrayBuffer | null;
+    headers?: Record<string, string>;
+  } = {}
 ): Promise<Response> {
   const c = load();
   if (!c.host) throw new Error("Téléphone non configuré");
-  if (!sessionCookie) await login();
+  await ensureLogin();
 
   const doFetch = () =>
     fetch(`${baseUrl()}${pathPart}`, {
@@ -88,7 +112,7 @@ export async function phoneFetch(
 
   let res = await doFetch();
   if (res.status === 401 || res.status === 302) {
-    await login();
+    await ensureLogin(true);
     res = await doFetch();
   }
   return res;
@@ -96,8 +120,7 @@ export async function phoneFetch(
 
 export async function testConnection(): Promise<{ ok: boolean; error?: string }> {
   try {
-    sessionCookie = null;
-    await login();
+    await ensureLogin(true);
     return { ok: true };
   } catch (e: unknown) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };

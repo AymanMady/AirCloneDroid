@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { MessageSquare, Send, Plus, RefreshCw, Loader2 } from "lucide-react";
 import { phoneGet, phonePost, phoneAsset, okOf, asArray } from "@/lib/api";
+import { useApp } from "@/components/providers/AppProvider";
+import PageTitle from "@/components/layout/PageTitle";
 import { Loading, EmptyState } from "@/components/ui";
 
 type Thread = {
@@ -17,51 +19,49 @@ type Thread = {
   unread: number;
 };
 
-type Message = {
-  sent: boolean;
-  timest: number;
-  number: string;
-  date: string;
-  message: string;
-};
+type Message = { sent: boolean; timest: number; number: string; date: string; message: string };
 
 function Avatar({ img, label }: { img?: string; label: string }) {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-500">
+    <span
+      className="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold overflow-hidden flex-shrink-0"
+      style={{ width: 42, height: 42 }}
+    >
       {img ? (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={phoneAsset("/" + img)} alt="" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+        <img src={phoneAsset("/" + img)} alt="" className="w-100 h-100" style={{ objectFit: "cover" }} onError={(e) => (e.currentTarget.style.display = "none")} />
       ) : (
         label.charAt(0).toUpperCase()
       )}
-    </div>
+    </span>
   );
 }
 
 export default function SmsPanel() {
+  const { t, notify } = useApp();
   const [threads, setThreads] = useState<Thread[] | null>(null);
   const [selected, setSelected] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[] | null>(null);
-  const [composeTo, setComposeTo] = useState<string>("");
+  const [composeTo, setComposeTo] = useState("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [newMode, setNewMode] = useState(false);
+  const [query, setQuery] = useState("");
 
   const loadThreads = useCallback(async () => {
     setThreads(null);
-    const data = asArray<Thread>(await phoneGet("/datas/sms/threads.xhtml"));
-    setThreads(data);
+    setThreads(asArray<Thread>(await phoneGet("/datas/sms/threads.xhtml")));
   }, []);
 
   useEffect(() => {
     loadThreads();
   }, [loadThreads]);
 
-  async function openThread(t: Thread) {
+  async function openThread(th: Thread) {
     setNewMode(false);
-    setSelected(t);
+    setSelected(th);
     setMessages(null);
-    const res = await phoneGet("/datas/sms/show_thread.xhtml?threadId=" + t.id);
+    const res = await phoneGet("/datas/sms/show_thread.xhtml?threadId=" + th.id);
     const arr = asArray<{ messages: Message[] }>(res);
     setMessages(arr[0]?.messages ?? []);
   }
@@ -73,6 +73,7 @@ export default function SmsPanel() {
     const r = okOf(await phonePost("/datas/sms/send_sms.xhtml", { number, message: text }));
     setSending(false);
     if (r.success) {
+      notify("success", t("sms.sent"));
       setText("");
       if (newMode) {
         setNewMode(false);
@@ -80,119 +81,131 @@ export default function SmsPanel() {
       } else if (selected) {
         await openThread(selected);
       }
+    } else {
+      notify("error", r.error || t("common.error"));
     }
   }
 
-  return (
-    <div className="flex h-full">
-      {/* Threads list */}
-      <div className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 p-3">
-          <button
-            onClick={() => {
-              setNewMode(true);
-              setSelected(null);
-              setMessages(null);
-            }}
-            className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--accent-dark)]"
-          >
-            <Plus size={16} /> Nouveau
-          </button>
-          <button onClick={loadThreads} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" title="Actualiser">
-            <RefreshCw size={16} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-auto">
-          {threads === null ? (
-            <Loading />
-          ) : threads.length === 0 ? (
-            <EmptyState icon={<MessageSquare size={28} />} title="Aucune conversation" />
-          ) : (
-            threads.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => openThread(t)}
-                className={`flex w-full items-center gap-3 border-b border-slate-50 px-3 py-3 text-left hover:bg-slate-50 ${
-                  selected?.id === t.id ? "bg-sky-50" : ""
-                }`}
-              >
-                <Avatar img={t.img} label={t.name !== "null" ? t.name : t.addr} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="truncate text-sm font-medium text-slate-800">
-                      {t.name !== "null" ? t.name : t.addr}
-                    </span>
-                    {t.unread > 0 && (
-                      <span className="ml-2 rounded-full bg-[var(--accent)] px-1.5 text-xs text-white">
-                        {t.unread}
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-slate-500">{t.body}</p>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+  const filtered = (threads ?? []).filter((th) => {
+    const label = th.name !== "null" ? th.name : th.addr;
+    return label.toLowerCase().includes(query.toLowerCase()) || th.addr.includes(query);
+  });
 
-      {/* Conversation */}
-      <div className="flex min-w-0 flex-1 flex-col bg-slate-50">
-        {!selected && !newMode ? (
-          <EmptyState icon={<MessageSquare size={32} />} title="Sélectionnez une conversation" hint="ou créez un nouveau message" />
-        ) : (
-          <>
-            <div className="border-b border-slate-200 bg-white px-5 py-3">
-              {newMode ? (
-                <input
-                  value={composeTo}
-                  onChange={(e) => setComposeTo(e.target.value)}
-                  placeholder="Numéro du destinataire"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--accent)]"
-                />
+  return (
+    <>
+      <PageTitle icon="pe-7s-mail" iconBg="bg-midnight-bloom" title={t("nav.sms")} subtitle={t("app.tagline")} />
+      <div className="card mb-3" style={{ height: "calc(100vh - 230px)", minHeight: 420 }}>
+        <div className="row g-0 h-100">
+          {/* threads */}
+          <div className="col-md-4 border-end d-flex flex-column h-100">
+            <div className="p-2 border-bottom d-flex gap-2">
+              <button
+                className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                onClick={() => {
+                  setNewMode(true);
+                  setSelected(null);
+                  setMessages(null);
+                }}
+              >
+                <Plus size={15} /> {t("sms.new")}
+              </button>
+              <input
+                className="form-control form-control-sm"
+                placeholder={t("common.search")}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button className="btn btn-light btn-sm" onClick={loadThreads}>
+                <RefreshCw size={15} />
+              </button>
+            </div>
+            <div className="flex-grow-1 overflow-auto">
+              {threads === null ? (
+                <Loading />
+              ) : filtered.length === 0 ? (
+                <EmptyState icon={<MessageSquare size={28} />} title={t("sms.noThreads")} />
               ) : (
-                <div className="font-medium text-slate-800">
-                  {selected?.name !== "null" ? selected?.name : selected?.addr}
+                <div className="list-group list-group-flush">
+                  {filtered.map((th) => {
+                    const label = th.name !== "null" ? th.name : th.addr;
+                    return (
+                      <button
+                        key={th.id}
+                        onClick={() => openThread(th)}
+                        className={`list-group-item list-group-item-action d-flex align-items-center gap-2 ${selected?.id === th.id ? "active" : ""}`}
+                      >
+                        <Avatar img={th.img} label={label} />
+                        <div className="flex-grow-1 min-w-0 text-start">
+                          <div className="d-flex justify-content-between">
+                            <span className="fw-semibold text-truncate">{label}</span>
+                            {th.unread > 0 && <span className="badge bg-primary rounded-pill">{th.unread}</span>}
+                          </div>
+                          <div className="small text-truncate opacity-75">{th.body}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-            <div className="flex-1 space-y-2 overflow-auto p-5">
-              {!newMode && messages === null ? (
-                <Loading />
-              ) : (
-                messages?.map((m, i) => (
-                  <div key={i} className={`flex ${m.sent ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${
-                        m.sent ? "bg-[var(--accent)] text-white" : "bg-white text-slate-800 shadow-sm"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap break-words">{m.message}</p>
-                      <p className={`mt-1 text-[10px] ${m.sent ? "text-white/70" : "text-slate-400"}`}>{m.date}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="flex items-center gap-2 border-t border-slate-200 bg-white p-3">
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Votre message…"
-                className="flex-1 rounded-full border border-slate-300 px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-              />
-              <button
-                onClick={send}
-                disabled={sending || !text.trim()}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-dark)] disabled:opacity-50"
-              >
-                {sending ? <Loader2 size={18} className="mrd-spin" /> : <Send size={18} />}
-              </button>
-            </div>
-          </>
-        )}
+          </div>
+
+          {/* conversation */}
+          <div className="col-md-8 d-flex flex-column h-100">
+            {!selected && !newMode ? (
+              <EmptyState icon={<MessageSquare size={34} />} title={t("sms.select")} hint={t("sms.selectHint")} />
+            ) : (
+              <>
+                <div className="p-3 border-bottom">
+                  {newMode ? (
+                    <input
+                      className="form-control"
+                      value={composeTo}
+                      onChange={(e) => setComposeTo(e.target.value)}
+                      placeholder={t("sms.recipient")}
+                    />
+                  ) : (
+                    <span className="fw-bold">{selected?.name !== "null" ? selected?.name : selected?.addr}</span>
+                  )}
+                </div>
+                <div className="flex-grow-1 overflow-auto p-3 d-flex flex-column gap-2">
+                  {!newMode && messages === null ? (
+                    <Loading />
+                  ) : (
+                    messages?.map((m, i) => (
+                      <div key={i} className={`d-flex ${m.sent ? "justify-content-end" : "justify-content-start"}`}>
+                        <div className={`mrd-bubble ${m.sent ? "mrd-bubble-out" : "mrd-bubble-in"}`}>
+                          <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: m.message }} />
+                          <div className={`mt-1 ${m.sent ? "text-white-50" : "text-muted"}`} style={{ fontSize: 10 }}>
+                            {m.date}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="p-2 border-top d-flex gap-2">
+                  <input
+                    className="form-control rounded-pill"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && send()}
+                    placeholder={t("sms.placeholder")}
+                  />
+                  <button
+                    className="btn btn-primary rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                    style={{ width: 42, height: 42 }}
+                    disabled={sending || !text.trim()}
+                    onClick={send}
+                  >
+                    {sending ? <Loader2 size={18} className="mrd-spin" /> : <Send size={18} />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

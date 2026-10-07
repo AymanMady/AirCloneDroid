@@ -1,5 +1,5 @@
-import Dashboard from "@/components/Dashboard";
+import DashboardView from "@/components/dashboard/DashboardView";
 
 export default function Home() {
-  return <Dashboard />;
+  return <DashboardView />;
 }

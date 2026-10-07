@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { LayoutGrid, RefreshCw, Download } from "lucide-react";
 import { phoneGet, phoneAsset, asArray } from "@/lib/api";
+import { useApp } from "@/components/providers/AppProvider";
+import PageTitle from "@/components/layout/PageTitle";
 import { Loading, EmptyState } from "@/components/ui";
 
 type App = {
@@ -24,6 +26,7 @@ function humanSize(bytes: string): string {
 }
 
 export default function AppsPanel() {
+  const { t } = useApp();
   const [apps, setApps] = useState<App[] | null>(null);
   const [query, setQuery] = useState("");
 
@@ -39,51 +42,57 @@ export default function AppsPanel() {
   const filtered = (apps ?? []).filter((a) => a.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher une application…"
-          className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-        />
-        <button onClick={load} className="rounded-lg border border-slate-200 bg-white p-2.5 text-slate-500 hover:bg-slate-100">
-          <RefreshCw size={16} />
-        </button>
+    <>
+      <PageTitle
+        icon="pe-7s-display2"
+        iconBg="bg-premium-dark"
+        title={t("nav.apps")}
+        subtitle={apps ? `${apps.length} applications` : undefined}
+        actions={
+          <button className="btn btn-light d-inline-flex align-items-center gap-2" onClick={load}>
+            <RefreshCw size={16} /> {t("common.refresh")}
+          </button>
+        }
+      />
+
+      <div className="mb-3">
+        <input className="form-control" placeholder={t("apps.search")} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
       {apps === null ? (
-        <Loading label="Chargement des applications (peut prendre quelques secondes)…" />
+        <Loading label={t("apps.loading")} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<LayoutGrid size={28} />} title="Aucune application" />
+        <EmptyState icon={<LayoutGrid size={28} />} title={t("apps.none")} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="row">
           {filtered.map((a, i) => (
-            <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={phoneAsset("/" + a.icon)}
-                alt=""
-                className="h-11 w-11 shrink-0 rounded-lg"
-                onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-800">{a.name}</p>
-                <p className="text-xs text-slate-400">
-                  v{a.version} · {humanSize(a.size)}
-                </p>
+            <div key={i} className="col-md-6 col-xl-4">
+              <div className="card mb-3">
+                <div className="card-body d-flex align-items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={phoneAsset("/" + a.icon)}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="rounded flex-shrink-0"
+                    onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                  />
+                  <div className="min-w-0 flex-grow-1">
+                    <div className="fw-semibold text-truncate">{a.name}</div>
+                    <div className="small text-muted">
+                      v{a.version} · {humanSize(a.size)}
+                    </div>
+                  </div>
+                  <a className="btn btn-sm btn-light" href={phoneAsset("/" + a.download)} title={t("apps.downloadApk")}>
+                    <Download size={16} />
+                  </a>
+                </div>
               </div>
-              <a
-                href={phoneAsset("/" + a.download)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-sky-50 hover:text-[var(--accent)]"
-                title="Télécharger l'APK"
-              >
-                <Download size={18} />
-              </a>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

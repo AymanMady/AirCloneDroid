@@ -3,141 +3,107 @@
 import { useState } from "react";
 import { Volume2, Camera, Mic, Video, Image as ImageIcon, Mail, Loader2 } from "lucide-react";
 import { phoneGet, phonePost, phoneAsset, okOf } from "@/lib/api";
-import { Toast } from "@/components/ui";
+import { useApp } from "@/components/providers/AppProvider";
+import PageTitle from "@/components/layout/PageTitle";
 
-function Card({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-3 flex items-center gap-2 font-semibold text-slate-800">
-        <span className="text-[var(--accent)]">{icon}</span>
+    <div className="card mb-3">
+      <div className="card-header fw-semibold d-flex align-items-center gap-2">
+        <span className="text-primary">{icon}</span>
         {title}
-      </h3>
-      {children}
+      </div>
+      <div className="card-body">{children}</div>
     </div>
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20";
-const btnCls =
-  "inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--accent-dark)] disabled:opacity-50";
-const btnGhost =
-  "inline-flex items-center gap-2 rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-300 disabled:opacity-50";
-
 export default function ToolsPanel() {
+  const { t } = useApp();
   return (
-    <div className="grid gap-5 p-6 md:grid-cols-2">
-      <TtsCard />
-      <CameraCard />
-      <VideoCard />
-      <MicCard />
-      <WallpaperCard />
-      <div className="md:col-span-2">
-        <EmailCard />
+    <>
+      <PageTitle icon="pe-7s-tools" iconBg="bg-love-kiss" title={t("nav.tools")} subtitle={t("app.tagline")} />
+      <div className="row">
+        <div className="col-lg-6"><TtsCard /></div>
+        <div className="col-lg-6"><CameraCard /></div>
+        <div className="col-lg-6"><VideoCard /></div>
+        <div className="col-lg-6"><MicCard /></div>
+        <div className="col-lg-6"><WallpaperCard /></div>
+        <div className="col-lg-6"><EmailCard /></div>
       </div>
-    </div>
+    </>
   );
 }
 
 function TtsCard() {
+  const { t, notify } = useApp();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function speak() {
     setBusy(true);
-    setMsg(null);
     const r = okOf(await phonePost("/datas/tts/speak.xhtml", { text }));
-    setMsg({ ok: r.success, t: r.success ? "Lecture en cours sur le téléphone." : `Erreur : ${r.error}` });
     setBusy(false);
+    notify(r.success ? "success" : "error", r.success ? t("tools.ttsPlaying") : r.error || t("common.error"));
   }
   return (
-    <Card icon={<Volume2 size={18} />} title="Synthèse vocale">
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Texte à faire lire par le téléphone…"
-        className={`${inputCls} min-h-[70px] resize-y`}
-      />
-      <div className="mt-3 flex items-center gap-3">
-        <button onClick={speak} disabled={busy || !text.trim()} className={btnCls}>
-          {busy && <Loader2 size={16} className="mrd-spin" />}
-          Lire sur le téléphone
-        </button>
-      </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
+    <Card icon={<Volume2 size={18} />} title={t("tools.tts")}>
+      <textarea className="form-control" rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("tools.ttsText")} />
+      <button className="btn btn-primary mt-3 d-inline-flex align-items-center gap-2" disabled={busy || !text.trim()} onClick={speak}>
+        {busy && <Loader2 size={16} className="mrd-spin" />}
+        {t("tools.ttsSpeak")}
+      </button>
     </Card>
   );
 }
 
 function CameraCard() {
+  const { t, notify } = useApp();
   const [busy, setBusy] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function take(front: boolean) {
     setBusy(true);
-    setMsg(null);
     setPhoto(null);
     const r = okOf(await phoneGet(`/datas/camera/take.xhtml?front=${front ? "1" : "0"}`));
+    setBusy(false);
     if (r.success && r.file) {
       setPhoto(phoneAsset("/" + r.file) + "?t=" + Date.now());
-      setMsg({ ok: true, t: "Photo capturée." });
+      notify("success", t("tools.photoTaken"));
     } else {
-      setMsg({ ok: false, t: `Erreur : ${r.error}` });
+      notify("error", r.error || t("common.error"));
     }
-    setBusy(false);
   }
   return (
-    <Card icon={<Camera size={18} />} title="Caméra">
-      <div className="flex gap-3">
-        <button onClick={() => take(false)} disabled={busy} className={btnCls}>
+    <Card icon={<Camera size={18} />} title={t("tools.camera")}>
+      <div className="d-flex gap-2">
+        <button className="btn btn-primary d-inline-flex align-items-center gap-2" disabled={busy} onClick={() => take(false)}>
           {busy && <Loader2 size={16} className="mrd-spin" />}
-          Photo (arrière)
+          {t("tools.photoBack")}
         </button>
-        <button onClick={() => take(true)} disabled={busy} className={btnGhost}>
-          Photo (avant)
+        <button className="btn btn-light" disabled={busy} onClick={() => take(true)}>
+          {t("tools.photoFront")}
         </button>
       </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
-      {photo && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={photo} alt="Photo" className="mt-3 w-full rounded-lg border border-slate-200" />
-      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {photo && <img src={photo} alt="" className="w-100 rounded border mt-3" />}
     </Card>
   );
 }
 
 function VideoCard() {
+  const { t, notify } = useApp();
   const [recording, setRecording] = useState(false);
   const [front, setFront] = useState(false);
   const [video, setVideo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function start() {
     setBusy(true);
-    setMsg(null);
     setVideo(null);
     const r = okOf(await phoneGet(`/datas/video/start.xhtml?front=${front ? "1" : "0"}`));
     setBusy(false);
     if (r.success) {
       setRecording(true);
-      setMsg({ ok: true, t: "Enregistrement vidéo en cours…" });
-    } else setMsg({ ok: false, t: `Erreur : ${r.error}` });
+      notify("info", t("tools.videoRecording"));
+    } else notify("error", r.error || t("common.error"));
   }
   async function stop() {
     setBusy(true);
@@ -146,36 +112,24 @@ function VideoCard() {
     setRecording(false);
     if (r.success && r.file) {
       setVideo(phoneAsset("/" + r.file) + "?t=" + Date.now());
-      setMsg({ ok: true, t: "Vidéo enregistrée." });
-    } else setMsg({ ok: false, t: `Erreur : ${r.error}` });
+      notify("success", t("tools.videoSaved"));
+    } else notify("error", r.error || t("common.error"));
   }
   return (
-    <Card icon={<Video size={18} />} title="Enregistrement vidéo">
-      <label className="mb-3 flex items-center gap-2 text-sm text-slate-600">
-        <input
-          type="checkbox"
-          checked={front}
-          disabled={recording}
-          onChange={(e) => setFront(e.target.checked)}
-        />
-        Caméra avant
-      </label>
-      <div className="flex items-center gap-3">
-        <button onClick={start} disabled={recording || busy} className={btnCls}>
-          {recording && <span className="h-2 w-2 animate-pulse rounded-full bg-white" />}
-          {recording ? "Enregistrement…" : "Démarrer"}
-        </button>
-        <button onClick={stop} disabled={!recording || busy} className={btnGhost}>
-          Arrêter
-        </button>
+    <Card icon={<Video size={18} />} title={t("tools.video")}>
+      <div className="form-check mb-3">
+        <input className="form-check-input" type="checkbox" id="vfront" checked={front} disabled={recording} onChange={(e) => setFront(e.target.checked)} />
+        <label className="form-check-label small" htmlFor="vfront">{t("tools.frontCamera")}</label>
       </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
+      <div className="d-flex gap-2">
+        <button className="btn btn-primary d-inline-flex align-items-center gap-2" disabled={recording || busy} onClick={start}>
+          {recording && <span className="spinner-grow spinner-grow-sm" />}
+          {recording ? t("tools.recording") : t("tools.start")}
+        </button>
+        <button className="btn btn-light" disabled={!recording || busy} onClick={stop}>{t("tools.stop")}</button>
+      </div>
       {video && (
-        <video controls src={video} className="mt-3 w-full rounded-lg border border-slate-200">
+        <video controls src={video} className="w-100 rounded border mt-3">
           <track kind="captions" />
         </video>
       )}
@@ -184,124 +138,89 @@ function VideoCard() {
 }
 
 function MicCard() {
+  const { t, notify } = useApp();
   const [recording, setRecording] = useState(false);
   const [audio, setAudio] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function start() {
-    setMsg(null);
     setAudio(null);
     const r = okOf(await phoneGet("/datas/mic/start.xhtml"));
     if (r.success) {
       setRecording(true);
-      setMsg({ ok: true, t: "Enregistrement en cours…" });
-    } else setMsg({ ok: false, t: `Erreur : ${r.error}` });
+      notify("info", t("tools.recStarted"));
+    } else notify("error", r.error || t("common.error"));
   }
   async function stop() {
     const r = okOf(await phoneGet("/datas/mic/stop.xhtml"));
     setRecording(false);
     if (r.success && r.file) {
       setAudio(phoneAsset("/" + r.file) + "?t=" + Date.now());
-      setMsg({ ok: true, t: "Enregistrement terminé." });
-    } else setMsg({ ok: false, t: `Erreur : ${r.error}` });
+      notify("success", t("tools.recDone"));
+    } else notify("error", r.error || t("common.error"));
   }
   return (
-    <Card icon={<Mic size={18} />} title="Microphone">
-      <div className="flex items-center gap-3">
-        <button onClick={start} disabled={recording} className={btnCls}>
-          {recording && <span className="h-2 w-2 animate-pulse rounded-full bg-white" />}
-          {recording ? "Enregistrement…" : "Démarrer"}
+    <Card icon={<Mic size={18} />} title={t("tools.mic")}>
+      <div className="d-flex gap-2">
+        <button className="btn btn-primary d-inline-flex align-items-center gap-2" disabled={recording} onClick={start}>
+          {recording && <span className="spinner-grow spinner-grow-sm" />}
+          {recording ? t("tools.recording") : t("tools.start")}
         </button>
-        <button onClick={stop} disabled={!recording} className={btnGhost}>
-          Arrêter
-        </button>
+        <button className="btn btn-light" disabled={!recording} onClick={stop}>{t("tools.stop")}</button>
       </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
-      {audio && (
-        <audio controls src={audio} className="mt-3 w-full">
-          <track kind="captions" />
-        </audio>
-      )}
+      {audio && <audio controls src={audio} className="w-100 mt-3"><track kind="captions" /></audio>}
     </Card>
   );
 }
 
 function WallpaperCard() {
+  const { t, notify } = useApp();
   const [path, setPath] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   async function apply() {
     setBusy(true);
-    setMsg(null);
     const r = okOf(await phonePost("/datas/wallpaper/set.xhtml", { path }));
-    setMsg({ ok: r.success, t: r.success ? "Fond d'écran appliqué." : `Erreur : ${r.error}` });
     setBusy(false);
+    notify(r.success ? "success" : "error", r.success ? t("tools.wallpaperSet") : r.error || t("common.error"));
   }
   return (
-    <Card icon={<ImageIcon size={18} />} title="Fond d'écran">
-      <input
-        value={path}
-        onChange={(e) => setPath(e.target.value)}
-        placeholder="/sdcard/Pictures/photo.jpg"
-        className={inputCls}
-      />
-      <p className="mt-1 text-xs text-slate-400">
-        Chemin d&apos;une image présente sur le téléphone (voir l&apos;onglet Fichiers).
-      </p>
-      <div className="mt-3">
-        <button onClick={apply} disabled={busy || !path.trim()} className={btnCls}>
-          {busy && <Loader2 size={16} className="mrd-spin" />}
-          Appliquer
-        </button>
-      </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
+    <Card icon={<ImageIcon size={18} />} title={t("tools.wallpaper")}>
+      <input className="form-control" value={path} onChange={(e) => setPath(e.target.value)} placeholder="/sdcard/Pictures/photo.jpg" />
+      <p className="small text-muted mt-1 mb-0">{t("tools.wallpaperHint")}</p>
+      <button className="btn btn-primary mt-3 d-inline-flex align-items-center gap-2" disabled={busy || !path.trim()} onClick={apply}>
+        {busy && <Loader2 size={16} className="mrd-spin" />}
+        {t("tools.apply")}
+      </button>
     </Card>
   );
 }
 
 function EmailCard() {
+  const { t, notify } = useApp();
   const [f, setF] = useState({ host: "", port: "465", user: "", pass: "", to: "", subject: "", body: "" });
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setF({ ...f, [k]: e.target.value });
   async function send() {
     setBusy(true);
-    setMsg(null);
     const r = okOf(await phonePost("/datas/email/send.xhtml", f));
-    setMsg({ ok: r.success, t: r.success ? "E-mail envoyé." : `Erreur : ${r.error}` });
     setBusy(false);
+    notify(r.success ? "success" : "error", r.success ? t("tools.emailSent") : r.error || t("common.error"));
   }
   return (
-    <Card icon={<Mail size={18} />} title="Envoi d'e-mail">
-      <div className="grid gap-3 md:grid-cols-2">
-        <input value={f.host} onChange={set("host")} placeholder="Serveur SMTP (smtp.gmail.com)" className={inputCls} />
-        <input value={f.port} onChange={set("port")} placeholder="Port SSL (465)" className={inputCls} />
-        <input value={f.user} onChange={set("user")} placeholder="Votre adresse (identifiant SMTP)" className={inputCls} />
-        <input value={f.pass} onChange={set("pass")} type="password" placeholder="Mot de passe d'application" className={inputCls} />
-        <input value={f.to} onChange={set("to")} placeholder="Destinataire" className={inputCls} />
-        <input value={f.subject} onChange={set("subject")} placeholder="Objet" className={inputCls} />
+    <Card icon={<Mail size={18} />} title={t("tools.email")}>
+      <div className="row g-2">
+        <div className="col-8"><input className="form-control" value={f.host} onChange={set("host")} placeholder="smtp.gmail.com" /></div>
+        <div className="col-4"><input className="form-control" value={f.port} onChange={set("port")} placeholder="465" /></div>
+        <div className="col-6"><input className="form-control" value={f.user} onChange={set("user")} placeholder="user@gmail.com" /></div>
+        <div className="col-6"><input className="form-control" type="password" value={f.pass} onChange={set("pass")} placeholder="••••••••" /></div>
+        <div className="col-6"><input className="form-control" value={f.to} onChange={set("to")} placeholder={t("tools.to")} /></div>
+        <div className="col-6"><input className="form-control" value={f.subject} onChange={set("subject")} placeholder={t("tools.subject")} /></div>
+        <div className="col-12"><textarea className="form-control" rows={3} value={f.body} onChange={set("body")} placeholder={t("tools.message")} /></div>
       </div>
-      <textarea value={f.body} onChange={set("body")} placeholder="Message…" className={`${inputCls} mt-3 min-h-[80px] resize-y`} />
-      <p className="mt-1 text-xs text-slate-400">SMTP sécurisé (SSL, port 465). Pour Gmail, utilisez un « mot de passe d&apos;application ».</p>
-      <div className="mt-3">
-        <button onClick={send} disabled={busy || !f.host || !f.to} className={btnCls}>
-          {busy && <Loader2 size={16} className="mrd-spin" />}
-          Envoyer
-        </button>
-      </div>
-      {msg && (
-        <div className="mt-3">
-          <Toast ok={msg.ok}>{msg.t}</Toast>
-        </div>
-      )}
+      <p className="small text-muted mt-2 mb-0">{t("tools.emailHint")}</p>
+      <button className="btn btn-primary mt-3 d-inline-flex align-items-center gap-2" disabled={busy || !f.host || !f.to} onClick={send}>
+        {busy && <Loader2 size={16} className="mrd-spin" />}
+        {t("common.send")}
+      </button>
     </Card>
   );
 }

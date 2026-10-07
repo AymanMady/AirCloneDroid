@@ -1,0 +1,198 @@
+/*
+ * App-specific styles layered on top of the compiled ArchitectUI theme
+ * (loaded as /architectui/assets/styles/main.css). Holds: animations, the
+ * toast + modal widgets, dashboard tweaks, and a full dark-mode variant keyed
+ * off `.app-container.app-theme-dark`.
+ */
+
+:root {
+  --mrd-accent: #3f6ad8;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------- animations */
+@keyframes mrd-spin {
+  to { transform: rotate(360deg); }
+}
+.mrd-spin { animation: mrd-spin 0.8s linear infinite; }
+
+@keyframes mrd-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mrd-fade { animation: mrd-fade 0.2s ease-out; }
+
+/* ------------------------------------------------------------------- toasts */
+.mrd-toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1080;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+}
+.mrd-toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 260px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  border-left: 4px solid #6c757d;
+  color: #343a40;
+}
+.mrd-toast-success { border-left-color: #3ac47d; }
+.mrd-toast-success svg { color: #3ac47d; }
+.mrd-toast-error { border-left-color: #d92550; }
+.mrd-toast-error svg { color: #d92550; }
+.mrd-toast-info { border-left-color: #3f6ad8; }
+.mrd-toast-info svg { color: #3f6ad8; }
+.mrd-toast-close {
+  border: 0;
+  background: transparent;
+  color: #adb5bd;
+  display: flex;
+  cursor: pointer;
+  padding: 0;
+}
+.mrd-toast-close:hover { color: #495057; }
+
+/* -------------------------------------------------------------------- modal */
+.mrd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1070;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(13, 27, 62, 0.45);
+  backdrop-filter: blur(2px);
+}
+.mrd-modal-card {
+  width: 100%;
+  margin: 0;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+}
+
+/* --------------------------------------------------------------- dashboard */
+.mrd-stat-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.mrd-clickable { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.mrd-clickable:hover { transform: translateY(-3px); box-shadow: 0 0.6rem 1.4rem rgba(0, 0, 0, 0.12); }
+
+/* SMS conversation bubbles */
+.mrd-bubble {
+  max-width: 72%;
+  padding: 0.5rem 0.85rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+.mrd-bubble-in { background: #fff; color: #343a40; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+.mrd-bubble-out { background: var(--mrd-accent); color: #fff; }
+
+.mrd-chat-scroll { max-height: calc(100vh - 320px); overflow-y: auto; }
+.mrd-list-scroll { max-height: calc(100vh - 300px); overflow-y: auto; }
+
+/* thin scrollbars */
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb {
+  background: #c3cad9;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: #a7b1c6; background-clip: content-box; }
+
+/* ============================================================== DARK THEME */
+.app-container.app-theme-dark {
+  background: #10131a;
+  color: #c7ccd6;
+
+  .app-main__outer,
+  .app-main__inner { background: #10131a; }
+
+  .card,
+  .main-card,
+  .dropdown-menu,
+  .widget-content {
+    background-color: #1a1f2b;
+    color: #c7ccd6;
+    border-color: #2a3142;
+  }
+  .card-header,
+  .card-footer,
+  .card-header-tab {
+    background-color: #1a1f2b !important;
+    color: #e7eaf0;
+    border-color: #2a3142 !important;
+  }
+
+  .text-dark,
+  .widget-heading,
+  .widget-numbers,
+  h1, h2, h3, h4, h5, h6 { color: #e7eaf0 !important; }
+
+  .text-muted,
+  .widget-subheading { color: #8b93a7 !important; }
+
+  .table { --bs-table-color: #c7ccd6; --bs-table-bg: transparent; color: #c7ccd6; }
+  .table thead th,
+  .table td,
+  .table th { border-color: #2a3142; color: #c7ccd6; }
+  .table-hover > tbody > tr:hover > * { background-color: #222838; color: #e7eaf0; }
+  .table-striped > tbody > tr:nth-of-type(odd) > * { background-color: #171c27; color: inherit; }
+
+  .list-group-item {
+    background-color: #1a1f2b;
+    color: #c7ccd6;
+    border-color: #2a3142;
+  }
+
+  .form-control,
+  .form-select {
+    background-color: #11151d;
+    border-color: #2a3142;
+    color: #e7eaf0;
+  }
+  .form-control::placeholder { color: #6b7280; }
+  .form-control:focus,
+  .form-select:focus { background-color: #11151d; color: #e7eaf0; border-color: var(--mrd-accent); }
+  .input-group-text { background-color: #222838; border-color: #2a3142; color: #8b93a7; }
+
+  .dropdown-item { color: #c7ccd6; }
+  .dropdown-item:hover { background-color: #222838; color: #fff; }
+  .dropdown-divider { border-color: #2a3142; }
+
+  .border,
+  .border-top,
+  .border-bottom,
+  .border-start,
+  .border-end { border-color: #2a3142 !important; }
+
+  .mrd-toast { background: #1a1f2b; color: #c7ccd6; }
+  .mrd-bubble-in { background: #222838; color: #e7eaf0; }
+
+  .btn-light,
+  .btn-outline-secondary { color: #c7ccd6; }
+
+  .app-footer,
+  .app-footer__inner { background: #1a1f2b; color: #8b93a7; }
+}

@@ -282,7 +282,7 @@ public class TabedActivity extends PawServerActivity implements ServiceListener 
     private static final String[] WEB_ASSET_DIRS = {"conf", "html", "logs", "tmp"};
 
     /** Bumped whenever the bundled web content changes, to force a re-copy. */
-    private static final String INSTALL_MARKER = ".installed_v8";
+    private static final String INSTALL_MARKER = ".installed_v9";
 
     /** Connection PIN shown to the user; required to log into the web UI. */
     public static volatile String currentPin = null;
