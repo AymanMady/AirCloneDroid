@@ -44,6 +44,13 @@ export default function Header() {
         </div>
 
         <div className="app-header-right">
+          {/* Demo badge */}
+          {config?.demo && (
+            <span className="badge bg-warning text-dark rounded-pill me-2" title="Données d'exemple">
+              DÉMO
+            </span>
+          )}
+
           {/* Connection status pill */}
           <button
             className="btn btn-sm border rounded-pill d-inline-flex align-items-center gap-2 me-2"
@@ -56,7 +63,11 @@ export default function Header() {
               fill="currentColor"
             />
             <span className="small">
-              {config?.host ? `${config.host}:${config.port}` : t("header.notConfigured")}
+              {config?.demo
+                ? "Démonstration"
+                : config?.host
+                  ? `${config.host}:${config.port}`
+                  : t("header.notConfigured")}
             </span>
           </button>
 

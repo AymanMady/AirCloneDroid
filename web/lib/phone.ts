@@ -8,6 +8,7 @@
  */
 import fs from "fs";
 import path from "path";
+import { isDemoMode, demoResponse } from "./demo";
 
 export type PhoneConfig = { host: string; port: number; pin: string };
 
@@ -15,6 +16,11 @@ const CONFIG_PATH = path.join(process.cwd(), ".phone-config.json");
 
 let config: PhoneConfig | null = null;
 let sessionCookie: string | null = null;
+
+/** True when the app should serve bundled sample data instead of a real phone. */
+export function isDemo(): boolean {
+  return isDemoMode(!!load().host);
+}
 
 function load(): PhoneConfig {
   if (config) return config;
@@ -37,7 +43,14 @@ export function getConfig(): PhoneConfig {
 export function setConfig(c: PhoneConfig) {
   config = { host: c.host.trim(), port: Number(c.port) || 7575, pin: c.pin };
   sessionCookie = null; // force a fresh login
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  // Best-effort persistence. The filesystem is read-only on serverless hosts
+  // (Vercel), so a failure here is expected there — the in-memory config still
+  // applies for this instance, and persistent config comes from env vars.
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  } catch {
+    /* read-only FS (e.g. Vercel) — ignore */
+  }
 }
 
 function baseUrl(): string {
@@ -94,6 +107,8 @@ export async function phoneFetch(
     headers?: Record<string, string>;
   } = {}
 ): Promise<Response> {
+  if (isDemo()) return demoResponse(pathPart);
+
   const c = load();
   if (!c.host) throw new Error("Téléphone non configuré");
   await ensureLogin();
@@ -119,6 +134,7 @@ export async function phoneFetch(
 }
 
 export async function testConnection(): Promise<{ ok: boolean; error?: string }> {
+  if (isDemo()) return { ok: true };
   try {
     await ensureLogin(true);
     return { ok: true };

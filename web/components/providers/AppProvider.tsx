@@ -40,6 +40,7 @@ export type ConfigState = {
   port: number;
   pinSet: boolean;
   connected: boolean;
+  demo?: boolean;
   error?: string;
 };
 

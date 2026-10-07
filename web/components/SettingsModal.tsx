@@ -55,6 +55,14 @@ export default function SettingsModal() {
         </>
       }
     >
+      {config?.demo && (
+        <div className="alert alert-warning py-2 small">
+          <strong>Mode démonstration.</strong> L&apos;application affiche des données
+          d&apos;exemple (aucun téléphone requis). Pour connecter un vrai appareil, hébergez
+          l&apos;app sur le même réseau Wi-Fi que le téléphone, ou définissez les variables
+          d&apos;environnement <code>PHONE_HOST</code> / <code>PHONE_PORT</code> / <code>PHONE_PIN</code>.
+        </div>
+      )}
       <p className="text-muted small">{t("conn.help")}</p>
       <div className="row g-3">
         <div className="col-8">
